@@ -1,0 +1,138 @@
+---
+title: "Project Results"
+author: "Group- P7"
+date: "4/26/2018"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+First we load the data and create the features in the testing data.
+
+```{r}
+## Here we load the test data along with their prediction
+library(lubridate)
+
+## Loading test file with predicted values 
+test.pred = read.csv(file = 'test_pred.csv', header = T, sep = ',')
+
+## Here we find the hour
+test.pred$click_time = hour(test.pred$click_time)
+
+## Here we find feature1 (combination of app and device)
+test.pred$feature1 = as.numeric(paste0(test.pred$app, test.pred$device))
+
+## Here we find feature2 (combination of app and os)
+test.pred$feature2 = as.numeric(paste0(test.pred$app, test.pred$os))
+
+## Here we find feature3 (combination of app and channel)
+test.pred$feature3 = as.numeric(paste0(test.pred$app, test.pred$channel))
+
+## Here we find feature4 (combination of device and os)
+test.pred$feature4 = as.numeric(paste0(test.pred$device, test.pred$os))
+
+## Here we find feature5 (combination of device and channel)
+test.pred$feature5 = as.numeric(paste0(test.pred$device, test.pred$channel))
+
+## Here we find feature6 (combination of os and channel)
+test.pred$feature6 = as.numeric(paste0(test.pred$os, test.pred$channel))
+```
+
+Since the predictions values are 0's and 1's, it seems logical to fit a logistic model to the data as shown below.
+
+```{r}
+## logistic regression
+md = glm(pred ~ ip + app + device + os + channel + click_time + feature1 + feature2 + feature3 + feature4 + feature5 + feature6, data = test.pred)
+summary(md)
+```
+
+From the results, we see ip and feature5 are not significant. Also note that the iteration between app, device, os and channel are important. We next only focus on prediction values equal to 1 with the goal of finding interesting interactions between app, device, os and channel.
+
+```{r}
+## selecting only the observation that have predictions equal to 1
+test.pred.one = subset(test.pred, pred == 1)
+
+## Now lets see the Summary
+summary(test.pred.one)
+
+
+## Feature1 - Here we start looking for interesting relationships in feature 1
+t1 = table(test.pred.one$feature1)
+t1 = t1[order(t1, decreasing = T)]
+
+## from the above the table we see that app = 19 and device = 0 
+## has a lot of ones
+test.190 = subset(test.pred.one, feature1 == '190')
+
+## from above let's take top 10 results
+test.190[1:10,]
+
+# Feature2 - Here we start looking for interesting relationships in feature 2
+t2 = table(test.pred.one$feature2)
+t2 = t2[order(t2, decreasing = T)]
+
+## from the above the table we see that app = 19 and os = 24 
+## has a lot of ones
+test.1924 = subset(test.pred.one, feature2 == '1924')
+test.1924[1:10,]
+
+# Feature3 - Here we start looking for interesting relationships in feature 3
+t3 = table(test.pred.one$feature3)
+t3 = t3[order(t3, decreasing = T)]
+
+## from the above the table we see that app = 19 and channel = 347 
+## has a lot of ones
+test.19347 = subset(test.pred.one, feature3 == '19347')
+test.19347[1:10,]
+
+# Feature4 - Here we start looking for interesting relationships in feature 4
+t4 = table(test.pred.one$feature4)
+t4 = t4[order(t4, decreasing = T)]
+
+## from the above the table we see that device = 0 and os = 24 
+## has a lot of ones
+test.24 = subset(test.pred.one, feature4 == '24')
+test.24[1:10,]
+
+# Feature5 - Here we start looking for interesting relationships in feature 5
+t5 = table(test.pred.one$feature5)
+t5 = t5[order(t5, decreasing = T)]
+
+## from the above the table we see that device = 0 and channel = 347 
+## has a lot of ones
+test.347 = subset(test.pred.one, feature5 == '347')
+test.347[1:10,]
+
+# Feature6 - Here we start looking for interesting relationships in feature 6
+t6 = table(test.pred.one$feature6)
+t6 = t6[order(t6, decreasing = T)]
+
+## from the above the table we see that os = 33 and channel = 347 
+## has a lot of ones
+test.33347 = subset(test.pred.one, feature5 == '33347')
+test.33347[1:10,]
+
+
+## Here we interect the data sets
+interesting0 = subset(test.pred.one, app == '19' & device == '0' & (os == '24' | os == '33') & channel == '347')
+
+interesting1 = subset(test.pred.one, (app == '19' | app == '29') & (device == '0' | device == '1') & (os == '0' | os == '24') & (channel == '213' | channel == '347'))
+```
+
+In the above results, we only consider the two labels with the highest frequency for each of the features. The interesting results that observed. There are few app, device, operating system and channel they have highest number of clicks compare to others. We observed with 
+feature1 - the app 29 and device 1 has the higest frequecy of clicks 
+feature2 - the app 19 and os 24 has the higest frequecy of clicks 
+feature3 - the app 19 and channel 347 has the higest frequecy of clicks 
+feature4 - the device 0 and os 24  has the higest frequecy of clicks  
+feature5 - the device 0 and channel 347  has the higest frequecy of clicks  
+feature6 - the os 33 and os 347  has the higest frequecy of clicks 
+
+
+## Future Study
+Note that the results of this analysis is based on analyzing the first 20 millon observations of the training data set. A follow-up would be to consider all the observations in the training data set. The main reason why we could not include all the observations in the training data set was due to computing limitations.
+
+
+
+
